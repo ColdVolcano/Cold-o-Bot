@@ -162,7 +162,7 @@ namespace ColdOBot
                                         e.Message.RespondAsync($"{e.Author.Mention}: You can only roll up to 10 dices");
                                 }
                                 else
-                                    e.Message.RespondAsync("Could not parse values");
+                                    break;
                                 return Task.Delay(0);
                             case false:
                                 if (!uint.TryParse(split[1], out maxValue) || maxValue == 0)
