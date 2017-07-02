@@ -115,16 +115,20 @@ namespace ColdOBot
 
             discord.MessageCreated += e =>
             {
-                discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot", e.Message.Content, DateTime.Now);
+                discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot",e.Message.Author.Username + ": " + e.Message.Content, DateTime.Now);
                 #region PING COMMAND
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
-                    e.Message.RespondAsync(e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now).ToString("ss'.'ffffff"));
+                    e.Message.RespondAsync(e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now).ToString("ss's'ffffff'u'"));
                 }
                 #endregion
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
                     e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
+                }
+                else if(e.Message.Content.StartsWith($"{prefix}stats"))
+                {
+                    e.Message.RespondAsync("Congratulations, you just triggered the stats command!");
                 }
                 #region ROLL COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}roll"))
