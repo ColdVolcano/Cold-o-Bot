@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using System.Net.Sockets;
+using System.IO;
+using System.Linq;
 
 namespace ColdOBot
 {
@@ -10,29 +13,70 @@ namespace ColdOBot
     {
         private static byte[] data;
 
+        private static Dictionary<string, string> keys = new Dictionary<string, string>();
+        private static string prefix = "!!";
+
         private static DiscordClient discord;
+
+        static private string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColdOBot");
+        static private string configPath = Path.Combine(path, "settings.txt");
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Discord token pls");
-            string token = Console.ReadLine();
+            bool needsRecheck = false;
+            do
+            {
+                if (File.Exists(configPath) && !needsRecheck)
+                {
+                    string line;
+                    StreamReader reader = new StreamReader(configPath);
+                    while((line = reader.ReadLine()) != null)
+                    {
+                        string[] split = line.Split('=');
+                        keys[split[0].Trim(' ')] = split[1].Trim();
+                    }
+                    if (keys.ContainsKey("token") && keys.ContainsKey("oauth") && keys.ContainsKey("nick") && keys.ContainsKey("channel") && string.IsNullOrWhiteSpace(keys.Keys.Where(key => keys[key].StartsWith(" ") || keys[key].EndsWith(" ")).FirstOrDefault()))
+                    {
+                        if (keys.ContainsValue(null) || keys.ContainsValue(""))
+                            needsRecheck = true;
+                    }
+                    else
+                        needsRecheck = true;
+                }
+                else
+                {
+                    if (!Directory.Exists(path))
+                        Directory.CreateDirectory(path);
+                    InitializeConfig();
+                    needsRecheck = true;
+                }
+            } while (needsRecheck);
+
             discord = new DiscordClient(new DiscordConfig
             {
                 AutoReconnect = true,
                 DiscordBranch = Branch.Stable,
                 LargeThreshold = 250,
                 LogLevel = LogLevel.Debug,
-                Token = token,
+                Token = keys["token"],
                 TokenType = TokenType.Bot,
                 UseInternalLogHandler = false
             });
+            Run(keys["oauth"], keys["nick"], keys["channel"]).GetAwaiter().GetResult();
+        }
+
+        static private void InitializeConfig()
+        {
+            string[] lines = new string[4];
+            Console.WriteLine("Discord token pls");
+            lines[0] = "token = " + Console.ReadLine();
             Console.WriteLine("Twitch oauth");
-            string oauth = Console.ReadLine();
+            lines[1] = "oauth = " + Console.ReadLine();
             Console.WriteLine("Twitch nick");
-            string nick = Console.ReadLine();
+            lines[2] = "nick = " + Console.ReadLine();
             Console.WriteLine("Twitch channel to connect:");
-            string channel = Console.ReadLine();
-            Run(oauth, nick, channel).GetAwaiter().GetResult();
+            lines[3] = "channel = " + Console.ReadLine();
+            File.WriteAllLines(configPath, lines);
         }
 
         public static async Task Run(string twitchOauth, string twitchNick, string twitchTargetChannel)
@@ -41,9 +85,6 @@ namespace ColdOBot
             {
                 switch (e.Level)
                 {
-                    case LogLevel.Unnecessary:
-                        Console.BackgroundColor = ConsoleColor.DarkGray;
-                        break;
                     case LogLevel.Debug:
                         Console.BackgroundColor = ConsoleColor.Gray;
                         break;
@@ -76,17 +117,17 @@ namespace ColdOBot
             {
                 discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot", e.Message.Content, DateTime.Now);
                 #region PING COMMAND
-                if (e.Message.Content.StartsWith($"!ping"))
+                if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
                     e.Message.RespondAsync(e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now).ToString("ss'.'ffffff"));
                 }
                 #endregion
-                else if(e.Message.Content.StartsWith($"!twownk"))
+                else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
-                    e.Message.CreateReactionAsync("twownking:320774047267029002");
+                    e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
                 }
                 #region ROLL COMMAND
-                else if (e.Message.Content.StartsWith($"!roll"))
+                else if (e.Message.Content.StartsWith($"{prefix}roll"))
                 {
                     string[] split = e.Message.Content.Split(' ');
                     uint maxValue = 100;
