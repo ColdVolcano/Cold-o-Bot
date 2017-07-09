@@ -23,34 +23,44 @@ namespace ColdOBot
 
         static void Main(string[] args)
         {
-            bool needsRecheck = false;
+            bool needsRecheck = true;
             do
             {
-                if (File.Exists(configPath) && !needsRecheck)
+                if (!File.Exists(configPath))
                 {
-                    string line;
-                    StreamReader reader = new StreamReader(configPath);
-                    while((line = reader.ReadLine()) != null)
-                    {
-                        string[] split = line.Split('=');
-                        keys[split[0].Trim(' ')] = split[1].Trim();
-                    }
-                    if (keys.ContainsKey("token") && keys.ContainsKey("oauth") && keys.ContainsKey("nick") && keys.ContainsKey("channel") && string.IsNullOrWhiteSpace(keys.Keys.Where(key => keys[key].StartsWith(" ") || keys[key].EndsWith(" ")).FirstOrDefault()))
-                    {
-                        if (keys.ContainsValue(null) || keys.ContainsValue(""))
-                            needsRecheck = true;
-                    }
-                    else
-                        needsRecheck = true;
-                }
-                else
-                {
-                    if (!Directory.Exists(path))
-                        Directory.CreateDirectory(path);
                     InitializeConfig();
-                    needsRecheck = true;
+                    continue;
+                }
+                string line;
+                StreamReader reader = new StreamReader(configPath);
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string[] split = line.Split('=');
+                    keys[split[0].Trim(' ')] = split[1].Trim();
+                }
+                reader.Close();
+                if (!(keys.ContainsKey("token") && keys.ContainsKey("oauth") && keys.ContainsKey("nick") && keys.ContainsKey("channel") && keys.ContainsKey("osuKey")))
+                {
+                    InitializeConfig();
+                    continue;
+                }
+                if (!keys.ContainsValue(null) && !keys.ContainsValue(""))
+                {
+                    needsRecheck = false;
+                    continue;
+                }
+                bool hasDoneThat = false;
+                foreach (var key in keys)
+                {
+                    if (string.IsNullOrWhiteSpace(key.Value) && !hasDoneThat)
+                    {
+                        InitializeConfig();
+                        hasDoneThat = true;
+                    }
                 }
             } while (needsRecheck);
+
+            OsuApi.Key = keys["osuKey"];
 
             discord = new DiscordClient(new DiscordConfig
             {
@@ -67,7 +77,10 @@ namespace ColdOBot
 
         static private void InitializeConfig()
         {
-            string[] lines = new string[4];
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            string[] lines = new string[5];
             Console.WriteLine("Discord token pls");
             lines[0] = "token = " + Console.ReadLine();
             Console.WriteLine("Twitch oauth");
@@ -76,6 +89,8 @@ namespace ColdOBot
             lines[2] = "nick = " + Console.ReadLine();
             Console.WriteLine("Twitch channel to connect:");
             lines[3] = "channel = " + Console.ReadLine();
+            Console.WriteLine("osu!API key");
+            lines[4] = "osuKey = " + Console.ReadLine();
             File.WriteAllLines(configPath, lines);
         }
 
@@ -115,7 +130,7 @@ namespace ColdOBot
 
             discord.MessageCreated += e =>
             {
-                discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot",e.Message.Author.Username + ": " + e.Message.Content, DateTime.Now);
+                discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot", e.Message.Author.Username + ": " + e.Message.Content, DateTime.Now);
                 #region PING COMMAND
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
@@ -126,9 +141,48 @@ namespace ColdOBot
                 {
                     e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
                 }
-                else if(e.Message.Content.StartsWith($"{prefix}stats"))
+                else if (e.Message.Content.StartsWith($"{prefix}stats"))
                 {
-                    e.Message.RespondAsync("Congratulations, you just triggered the stats command!");
+
+                }
+                else if (e.Message.Content.StartsWith($"{prefix}deleteMessages") && e.Message.Author.Id == 120196252775350273)
+                {
+                    string[] split = e.Message.Content.Split(' ');
+                    int count = 0;
+                    if (split.Length == 2 && int.TryParse(split[1], out count) && count > 0 && count < 5)
+                    {
+                        e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":put_litter_in_its_place:").ToString());
+                        e.Channel.DeleteMessagesAsync(e.Channel.GetMessagesAsync(count, e.Message.Id).Result);
+                    }
+                    else
+                        e.Message.RespondAsync("Parameters do not match");
+                }
+                else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
+                {
+                    string[] split = e.Message.Content.Split(' ');
+                    if (split.Length >= 3)
+                        switch (split[1])
+                        {
+                            case "status":
+                                UserStatus status;
+                                bool canParse = Enum.TryParse(split[2], out status);
+                                if (canParse)
+                                {
+                                    discord.UpdateStatusAsync(user_status: status);
+                                    e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
+                                }
+                                else
+                                    e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":octagonal_sign:").ToString() + " Could not parse values");
+                                break;
+                            case "game":
+                                discord.UpdateStatusAsync(new Game(string.Join(" ", split.Skip(2).ToArray())));
+                                e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
+                                break;
+                            default:
+                                break;
+                        }
+                    else
+                        e.Message.RespondAsync("Not enough arguments");
                 }
                 #region ROLL COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}roll"))
@@ -279,5 +333,96 @@ namespace ColdOBot
                 }
             }
         }
+    }
+
+    public static class OsuApi
+    {
+        private static Uri BaseUri = new Uri("https://osu.ppy.sh/api/");
+        public static string Key;
+        public static dynamic GetBeatmaps(int beatmapSetID = 0, int beatmapID = 0, string user = "", OsuMode mode = OsuMode.All, int limit = 500)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+
+        public static dynamic GetUser(string user, OsuMode mode = OsuMode.Osu, int eventDays = 1)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+
+        public static dynamic GetScores(int beatmapID, string user = "", OsuMode mode = OsuMode.Osu, int mods = (int)Mods.None, int limit = 50)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+
+        public static dynamic GetUserBest(string user, OsuMode mode = OsuMode.Osu, int limit = 10)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+
+        public static dynamic GetUserRecent(string user, OsuMode mode = OsuMode.Osu, int limit = 10)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+
+        public static dynamic GetMatch(long matchID)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+
+        public static dynamic GetReplay(OsuMode mode, int beatmapID, string user)
+        {
+            dynamic yo = 5;
+            return yo;
+        }
+    }
+
+    public enum OsuMode
+    {
+        All = -1,
+        Osu = 0,
+        OsuTaiko = 1,
+        OsuCatch = 2,
+        OsuMania = 3,
+        Vitaru = 4,
+    }
+
+    enum Mods
+    {
+        None = 0,
+        NoFail = 1,
+        Easy = 2,
+        Hidden = 8,
+        HardRock = 16,
+        SuddenDeath = 32,
+        DoubleTime = 64,
+        Relax = 128,
+        HalfTime = 256,
+        Nightcore = 512, // Only set along with DoubleTime. i.e: NC only gives 576
+        Flashlight = 1024,
+        Autoplay = 2048,
+        SpunOut = 4096,
+        Relax2 = 8192,  // Autopilot?
+        Perfect = 16384, // Only set along with SuddenDeath. i.e: PF only gives 16416  
+        Key4 = 32768,
+        Key5 = 65536,
+        Key6 = 131072,
+        Key7 = 262144,
+        Key8 = 524288,
+        keyMod = Key4 | Key5 | Key6 | Key7 | Key8,
+        FadeIn = 1048576,
+        Random = 2097152,
+        LastMod = 4194304,
+        FreeModAllowed = NoFail | Easy | Hidden | HardRock | SuddenDeath | Flashlight | FadeIn | Relax | Relax2 | SpunOut | keyMod,
+        Key9 = 16777216,
+        Key10 = 33554432,
+        Key1 = 67108864,
+        Key3 = 134217728,
+        Key2 = 268435456
     }
 }
