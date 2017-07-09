@@ -16,6 +16,7 @@ namespace ColdOBot
         private static Dictionary<string, string> keys = new Dictionary<string, string>();
         private static string prefix = "!!";
 
+
         private static DiscordClient discord;
 
         static private string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColdOBot");
