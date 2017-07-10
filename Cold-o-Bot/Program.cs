@@ -94,7 +94,6 @@ namespace ColdOBot
             File.WriteAllLines(configPath, lines);
         }
         
-
         public static async Task Run(string twitchOauth, string twitchNick, string twitchTargetChannel)
         {
             discord.DebugLogger.LogMessageReceived += (o, e) =>
