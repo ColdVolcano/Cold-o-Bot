@@ -6,6 +6,7 @@ using DSharpPlus;
 using System.Net.Sockets;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 
 namespace ColdOBot
 {
@@ -141,6 +142,12 @@ namespace ColdOBot
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
                     e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
+                }
+                else if (e.Message.Content.StartsWith($"{prefix}restart"))
+                {
+                    e.Message.RespondAsync("Will start again in 4 seconds");
+                    Task.Delay(2000).GetAwaiter().GetResult();
+                    Process.GetCurrentProcess().CloseMainWindow();
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}lenny"))
                 {
