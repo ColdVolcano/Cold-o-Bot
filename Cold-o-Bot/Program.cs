@@ -94,7 +94,7 @@ namespace ColdOBot
             File.WriteAllLines(configPath, lines);
         }
         
-
+    
         public static async Task Run(string twitchOauth, string twitchNick, string twitchTargetChannel)
         {
             discord.DebugLogger.LogMessageReceived += (o, e) =>
@@ -142,9 +142,9 @@ namespace ColdOBot
                 {
                     e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
                 }
-                else if (e.Message.Content.StartsWith($"{prefix}stats"))
+                else if (e.Message.Content.StartsWith($"{prefix}lenny"))
                 {
-
+                    e.Message.RespondAsync("( ͡° ͜ʖ ͡°)");
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}deleteMessages") && e.Message.Author.Id == 120196252775350273)
                 {
