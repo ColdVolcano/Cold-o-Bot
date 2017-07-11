@@ -146,7 +146,9 @@ namespace ColdOBot
                 else if (e.Message.Content.StartsWith($"{prefix}restart"))
                 {
                     e.Message.RespondAsync("Will start again in 4 seconds");
+                    discord.UpdateStatusAsync(user_status: UserStatus.Invisible);
                     Task.Delay(2000).GetAwaiter().GetResult();
+                    Task.Run(discord.DisconnectAsync).GetAwaiter().GetResult();
                     Process.GetCurrentProcess().CloseMainWindow();
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}lenny"))
