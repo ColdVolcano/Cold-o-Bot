@@ -16,7 +16,7 @@ namespace ColdOBot
 
         private static Dictionary<string, string> keys = new Dictionary<string, string>();
         private static string prefix = "!!";
-        
+
         private static DiscordClient discord;
 
         static private string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColdOBot");
@@ -94,12 +94,13 @@ namespace ColdOBot
             lines[4] = "osuKey = " + Console.ReadLine();
             File.WriteAllLines(configPath, lines);
         }
-        
-    
+
+
         public static async Task Run(string twitchOauth, string twitchNick, string twitchTargetChannel)
         {
             discord.DebugLogger.LogMessageReceived += (o, e) =>
             {
+                bool needsFileLogging = false;
                 switch (e.Level)
                 {
                     case LogLevel.Debug:
@@ -109,19 +110,26 @@ namespace ColdOBot
                         Console.BackgroundColor = ConsoleColor.DarkGreen;
                         break;
                     case LogLevel.Warning:
-                        Console.BackgroundColor = ConsoleColor.DarkYellow;
-                        break;
                     case LogLevel.Error:
-                        Console.BackgroundColor = ConsoleColor.DarkRed;
-                        break;
                     case LogLevel.Critical:
-                        Console.BackgroundColor = ConsoleColor.Red;
+                        needsFileLogging = true;
+                        if (e.Level == LogLevel.Warning)
+                            Console.BackgroundColor = ConsoleColor.DarkYellow;
+                        if (e.Level == LogLevel.Error)
+                            Console.BackgroundColor = ConsoleColor.DarkRed;
+                        if (e.Level == LogLevel.Critical)
+                            Console.BackgroundColor = ConsoleColor.Red;
                         break;
                 }
                 Console.ForegroundColor = ConsoleColor.Black;
                 Console.Write($"[{e.Level}]");
                 Console.ResetColor();
                 Console.WriteLine($" [{e.Timestamp}] [{e.Application}] {e.Message}");
+                if (needsFileLogging)
+                {
+                    File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new string[] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
+                    Environment.Exit(-1);
+                }
             };
 
             discord.GuildAvailable += e =>
@@ -130,13 +138,15 @@ namespace ColdOBot
                 return Task.Delay(0);
             };
 
-            discord.MessageCreated += e =>
+            discord.MessageCreated += async e =>
             {
                 discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot", e.Message.Author.Username + ": " + e.Message.Content, DateTime.Now);
                 #region PING COMMAND
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
-                    e.Message.RespondAsync(e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now).ToString("ss's'ffffff'u'"));
+                    TimeSpan time = e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now);
+                    DiscordMessage message = await e.Message.RespondAsync(time.ToString("ss's'ffffff'u'"));
+                    await message.EditAsync($"{message.Content} (discord received {message.CreationDate.LocalDateTime.Subtract(DateTime.Now).Subtract(time).ToString("ss's'ffffff'u'")} later)");
                 }
                 #endregion
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
@@ -146,7 +156,7 @@ namespace ColdOBot
                 else if (e.Message.Content.StartsWith($"{prefix}restart"))
                 {
                     e.Message.RespondAsync("Will start again in 4 seconds");
-                    discord.UpdateStatusAsync(user_status: UserStatus.Invisible);
+                    await discord.UpdateStatusAsync(user_status: UserStatus.Invisible);
                     Task.Delay(2000).GetAwaiter().GetResult();
                     Task.Run(discord.DisconnectAsync).GetAwaiter().GetResult();
                     Process.GetCurrentProcess().CloseMainWindow();
@@ -178,14 +188,16 @@ namespace ColdOBot
                                 bool canParse = Enum.TryParse(split[2], out status);
                                 if (canParse)
                                 {
-                                    discord.UpdateStatusAsync(user_status: status);
+                                    discord.UpdateStatusAsync(discord.CurrentUser.Presence.Game, status);
                                     e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
                                 }
                                 else
                                     e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":octagonal_sign:").ToString() + " Could not parse values");
                                 break;
                             case "game":
-                                discord.UpdateStatusAsync(new Game(string.Join(" ", split.Skip(2).ToArray())));
+                                UserStatus lastStatus;
+                                Enum.TryParse(discord.CurrentUser.Presence.Status, out lastStatus);
+                                discord.UpdateStatusAsync(new Game(string.Join(" ", split.Skip(2).ToArray())), lastStatus);
                                 e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
                                 break;
                             default:
@@ -231,7 +243,7 @@ namespace ColdOBot
                                 }
                                 else
                                     break;
-                                return Task.Delay(0);
+                                return;
                             case false:
                                 if (!uint.TryParse(split[1], out maxValue) || maxValue == 0)
                                     maxValue = 100;
@@ -240,7 +252,7 @@ namespace ColdOBot
                     e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled {new Random().Next(1, (int)maxValue)}");
                 }
                 #endregion
-                return Task.Delay(0);
+                return;
             };
 
             discord.Ready += e =>
