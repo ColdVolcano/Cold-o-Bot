@@ -145,8 +145,8 @@ namespace ColdOBot
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
                     TimeSpan time = e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now);
-                    DiscordMessage message = await e.Message.RespondAsync(time.ToString("ss's'ffffff'u'"));
-                    await message.EditAsync($"{message.Content} (discord received {message.CreationDate.LocalDateTime.Subtract(DateTime.Now).Subtract(time).ToString("ss's'ffffff'u'")} later)");
+                    DiscordMessage message = await e.Message.RespondAsync("pong!");
+                    await message.EditAsync($"{message.Content} `{e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now).ToString("ss's'ffffff'u'")}`");
                 }
                 #endregion
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
