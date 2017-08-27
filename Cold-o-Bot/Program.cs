@@ -95,7 +95,6 @@ namespace ColdOBot
             File.WriteAllLines(configPath, lines);
         }
 
-
         public static async Task Run(string twitchOauth, string twitchNick, string twitchTargetChannel)
         {
             discord.DebugLogger.LogMessageReceived += (o, e) =>
@@ -159,7 +158,7 @@ namespace ColdOBot
                 {
                     e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
                 }
-                else if (e.Message.Content.StartsWith($"{prefix}restart"))
+                else if (e.Message.Content.StartsWith($"{prefix}restart") && e.Message.Author.Id == 120196252775350273)
                 {
                     e.Message.RespondAsync("Will start again in 4 seconds");
                     await discord.UpdateStatusAsync(user_status: UserStatus.Invisible);
@@ -292,7 +291,7 @@ namespace ColdOBot
             discord.Ready += e =>
             {
                 discord.DebugLogger.LogMessage(LogLevel.Info, "Cold-o-Bot", $"Cold-o-Bot is now running!", DateTime.Now);
-                return Task.Delay(0);
+                return Task.Delay(1);
             };
 
             await discord.ConnectAsync();
