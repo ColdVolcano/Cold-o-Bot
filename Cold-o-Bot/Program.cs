@@ -128,7 +128,7 @@ namespace ColdOBot
                 if (needsFileLogging)
                 {
                     File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new string[] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
-                    Environment.Exit(-1);
+                    //Environment.Exit(-1);
                 }
             };
 
@@ -183,6 +183,41 @@ namespace ColdOBot
                     else
                         e.Message.RespondAsync("Parameters do not match");
                 }
+                else if(e.Message.Content.StartsWith($"{prefix}serverInfo"))
+                {
+                    DiscordEmbed embed = new DiscordEmbed
+                    {
+                        Color = 12312,
+                        Thumbnail = new DiscordEmbedThumbnail
+                        {   
+                            Url = e.Guild.IconUrl,
+                        },
+                        Title = $"{e.Guild.Name}",
+                        Fields = new List<DiscordEmbedField>
+                        {
+                            new DiscordEmbedField
+                            {
+                                Inline = true,
+                                Name = "Owner",
+                                Value = $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}",
+                            },
+                            new DiscordEmbedField
+                            {
+                                Inline = true,
+                                Name = "Users",
+                                Value = $"{e.Guild.MemberCount}",
+                            },
+                            new DiscordEmbedField
+                            {
+                                Inline = true,
+                                Name = "Time Joined",
+                                Value = $"{e.Guild.JoinedAt}",
+                            }
+                        }
+                    };
+                    e.Message.RespondAsync("", embed: embed);
+                }
+                #region PROFILE COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
                 {
                     string[] split = e.Message.Content.Split(' ');
@@ -212,32 +247,42 @@ namespace ColdOBot
                     else
                         e.Message.RespondAsync("Not enough arguments");
                 }
+#endregion
                 #region ROLL COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}roll"))
                 {
                     string[] split = e.Message.Content.Split(' ');
                     uint maxValue = 100;
+                    int value = 0;
                     if (split.Length >= 2)
                         switch (split[1].Contains("d"))
                         {
                             case true:
                                 uint dices = 0;
                                 string[] dicesAndMaxes = split[1].Split('d');
-                                if (uint.TryParse(dicesAndMaxes[0], out dices) && uint.TryParse(dicesAndMaxes[1], out maxValue))
+                                if (uint.TryParse(dicesAndMaxes[0], out dices) && ((uint.TryParse(dicesAndMaxes[1], out maxValue) || int.TryParse(dicesAndMaxes[1], out value) && value != 0)))
                                 {
                                     if (dices == 1)
                                         break;
+                                    if (dices == 0)
+                                    {
+                                        e.Message.RespondAsync("Can't roll a dice I don't have");
+                                        return;
+                                    }
                                     if (dices <= 10)
                                     {
-                                        if (maxValue == 0)
+                                        if (maxValue == 0 && value == 0)
                                             maxValue = 6;
                                         string response = $"<@{e.Message.Author.Id}> rolled {dices} dices with {maxValue} sides:\n";
-                                        int diceResult;
+                                        int diceResult = 0;
                                         long totalResult = 0;
                                         Random ran = new Random();
                                         for (int i = 0; i < dices; i++)
                                         {
-                                            diceResult = ran.Next(1, (int)maxValue);
+                                            if (value != 0)
+                                                diceResult = ran.Next(value, -1);
+                                            else
+                                                diceResult = ran.Next(1, (int)maxValue);
                                             totalResult += diceResult;
                                             response += $"Dice {i + 1} got a {diceResult}\n";
                                         }
@@ -251,11 +296,14 @@ namespace ColdOBot
                                     break;
                                 return;
                             case false:
-                                if (!uint.TryParse(split[1], out maxValue) || maxValue == 0)
+                                if ((!uint.TryParse(split[1], out maxValue) || maxValue == 0) && (!int.TryParse(split[1], out value) || value == 0))
                                     maxValue = 100;
                                 break;
                         }
-                    e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled {new Random().Next(1, (int)maxValue)}");
+                    if (value != 0)
+                        e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled {new Random().Next(value, 0)}");
+                    else
+                        e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled {new Random().Next(1, (int)maxValue)}");
                 }
                 #endregion
                 return;
