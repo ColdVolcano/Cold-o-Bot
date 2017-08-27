@@ -15,7 +15,7 @@ namespace ColdOBot
         private static byte[] data;
 
         private static Dictionary<string, string> keys = new Dictionary<string, string>();
-        private static string prefix = "!!";
+        private static string prefix =  Environment.CurrentDirectory.StartsWith("D:\\") ? "??" : "!!";
 
         private static DiscordClient discord;
 
