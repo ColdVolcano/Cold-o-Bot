@@ -171,7 +171,7 @@ namespace ColdOBot
                 {
                     e.Message.RespondAsync("( ͡° ͜ʖ ͡°)");
                 }
-                else if (e.Message.Content.StartsWith($"{prefix}deleteMessages") && e.Message.Author.Id == 120196252775350273)
+                else if (e.Message.Content.StartsWith($"{prefix}deletemessages") && e.Message.Author.Id == 120196252775350273)
                 {
                     string[] split = e.Message.Content.Split(' ');
                     int count = 0;
@@ -183,7 +183,7 @@ namespace ColdOBot
                     else
                         e.Message.RespondAsync("Parameters do not match");
                 }
-                else if(e.Message.Content.StartsWith($"{prefix}serverInfo"))
+                else if(e.Message.Content.StartsWith($"{prefix}serverinfo"))
                 {
                     DiscordEmbed embed = new DiscordEmbed
                     {
