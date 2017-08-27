@@ -15,7 +15,7 @@ namespace ColdOBot
         private static byte[] data;
 
         private static Dictionary<string, string> keys = new Dictionary<string, string>();
-        private static string prefix =  Environment.CurrentDirectory.StartsWith("D:\\") ? "??" : "!!";
+        private static string prefix = Environment.CurrentDirectory.StartsWith("D:\\") ? "??" : "!!";
 
         private static DiscordClient discord;
 
@@ -145,7 +145,7 @@ namespace ColdOBot
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
                     TimeSpan time = e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now);
-                    DiscordMessage message = new DiscordMessage();
+                    DiscordMessage message = null;
                     string stuff = string.Empty;
                     await Task.Run(async () =>
                     {
@@ -183,39 +183,20 @@ namespace ColdOBot
                     else
                         e.Message.RespondAsync("Parameters do not match");
                 }
-                else if(e.Message.Content.StartsWith($"{prefix}serverinfo"))
+                else if (e.Message.Content.StartsWith($"{prefix}serverinfo"))
                 {
-                    DiscordEmbed embed = new DiscordEmbed
+                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder
                     {
-                        Color = 12312,
-                        Thumbnail = new DiscordEmbedThumbnail
-                        {   
-                            Url = e.Guild.IconUrl,
-                        },
+                        Color = new DiscordColor(),
+                        ThumbnailUrl = e.Guild.IconUrl,
                         Title = $"{e.Guild.Name}",
-                        Fields = new List<DiscordEmbedField>
-                        {
-                            new DiscordEmbedField
-                            {
-                                Inline = true,
-                                Name = "Owner",
-                                Value = $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}",
-                            },
-                            new DiscordEmbedField
-                            {
-                                Inline = true,
-                                Name = "Users",
-                                Value = $"{e.Guild.MemberCount}",
-                            },
-                            new DiscordEmbedField
-                            {
-                                Inline = true,
-                                Name = "Time Joined",
-                                Value = $"{e.Guild.JoinedAt}",
-                            }
-                        }
                     };
-                    e.Message.RespondAsync("", embed: embed);
+                    builder.AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true);
+                    builder.AddField("Members", $"{e.Guild.MemberCount}", true);
+                    builder.AddField("Time Created", $"{e.Guild.CreationDate}", true);
+                    builder.AddField("Roles", $"{e.Guild.Roles.Count}", true);
+                    builder.AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true);
+                    e.Message.RespondAsync("", embed: builder);
                 }
                 #region PROFILE COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
@@ -236,8 +217,7 @@ namespace ColdOBot
                                     e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":octagonal_sign:").ToString() + " Could not parse values");
                                 break;
                             case "game":
-                                UserStatus lastStatus;
-                                Enum.TryParse(discord.CurrentUser.Presence.Status, out lastStatus);
+                                UserStatus lastStatus = discord.CurrentUser.Presence.Status;
                                 discord.UpdateStatusAsync(new Game(string.Join(" ", split.Skip(2).ToArray())), lastStatus);
                                 e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
                                 break;
@@ -247,7 +227,7 @@ namespace ColdOBot
                     else
                         e.Message.RespondAsync("Not enough arguments");
                 }
-#endregion
+                #endregion
                 #region ROLL COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}roll"))
                 {
@@ -317,8 +297,9 @@ namespace ColdOBot
 
             await discord.ConnectAsync();
 
-            RunTwitchBot(twitchOauth, twitchNick, twitchTargetChannel);
+            Task.Run(() => RunTwitchBot(twitchOauth, twitchNick, twitchTargetChannel));
 
+            await Task.Delay(-1);
         }
 
         public static async Task RunTwitchBot(string oauth, string nick, string channel)
