@@ -184,18 +184,18 @@ namespace ColdOBot
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}serverinfo"))
                 {
-                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor(),
-                        ThumbnailUrl = e.Guild.IconUrl,
-                        Title = $"{e.Guild.Name}",
-                    };
-                    builder.AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true);
-                    builder.AddField("Members", $"{e.Guild.MemberCount}", true);
-                    builder.AddField("Time Created", $"{e.Guild.CreationDate}", true);
-                    builder.AddField("Roles", $"{e.Guild.Roles.Count}", true);
-                    builder.AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true);
-                    e.Message.RespondAsync("", embed: builder);
+                    e.Message.RespondAsync("",
+                        embed: new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor(),
+                            ThumbnailUrl = e.Guild.IconUrl,
+                        }
+                        .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
+                        .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
+                        .AddField("Members", $"{e.Guild.MemberCount}", true)
+                        .AddField("Time Created", $"{string.Join(" ", e.Guild.CreationDate.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}", true)
+                        .AddField("Roles", $"{e.Guild.Roles.Count}", true)
+                        .AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true));
                 }
                 #region PROFILE COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
