@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
+using DSharpPlus.Entities;
 using System.Net.Sockets;
 using System.IO;
 using System.Linq;
@@ -66,7 +67,6 @@ namespace ColdOBot
             discord = new DiscordClient(new DiscordConfig
             {
                 AutoReconnect = true,
-                DiscordBranch = Branch.Stable,
                 LargeThreshold = 250,
                 LogLevel = LogLevel.Debug,
                 Token = keys["token"],
@@ -143,15 +143,11 @@ namespace ColdOBot
                 #region PING COMMAND
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
-                    TimeSpan time = e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now);
+                    TimeSpan time = e.Message.CreationTimestamp.LocalDateTime.Subtract(DateTime.Now);
                     DiscordMessage message = null;
                     string stuff = string.Empty;
-                    await Task.Run(async () =>
-                    {
-                        stuff = e.Message.CreationDate.LocalDateTime.Subtract(DateTime.Now).ToString("ss's'ffffff'u'");
-                        message = await e.Message.RespondAsync("pong!");
-                    });
-                    await message.EditAsync($"{message.Content} `{stuff}`");
+                    await Task.Run(async () => message = await e.Message.RespondAsync("pong!"));
+                    await message.ModifyAsync($"{message.Content} `{(e.Message.CreationTimestamp - message.CreationTimestamp).ToString("ss's'ffffff'u'")}`");
                 }
                 #endregion
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
@@ -193,7 +189,7 @@ namespace ColdOBot
                         .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
                         .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
                         .AddField("Members", $"{e.Guild.MemberCount}", true)
-                        .AddField("Time Created", $"{string.Join(" ", e.Guild.CreationDate.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}", true)
+                        .AddField("Time Created", $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}", true)
                         .AddField("Roles", $"{e.Guild.Roles.Count}", true)
                         .AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true));
                 }
@@ -209,7 +205,8 @@ namespace ColdOBot
                                 bool canParse = Enum.TryParse(split[2], out status);
                                 if (canParse)
                                 {
-                                    discord.UpdateStatusAsync(discord.CurrentUser.Presence.Game, status);
+
+                                    discord.UpdateStatusAsync(new Game(discord.CurrentUser.Presence.Game.Name) { StreamType = GameStreamType.NoStream }, status);
                                     e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
                                 }
                                 else
