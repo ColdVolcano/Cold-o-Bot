@@ -150,6 +150,38 @@ namespace ColdOBot
                     await message.ModifyAsync($"{message.Content} `{(e.Message.CreationTimestamp - message.CreationTimestamp).ToString("ss's'ffffff'u'")}`");
                 }
                 #endregion
+                else if (e.Message.Content.StartsWith($"{prefix}user"))
+                {
+                    string[] split = e.Message.Content.Split(' ');
+                    DiscordMember member;
+                    if (split.Length == 1)
+                        member = await e.Guild.GetMemberAsync(e.Message.Author.Id);
+                    else
+                    {
+                        int i = 0;
+                        ulong snowflake;
+                        for (; !char.IsDigit(split[1], i); i++) ;
+                        if (!ulong.TryParse(split[1].Substring(i, split[1].Length - (i + 1)), out snowflake))
+                            return;
+                        member = await e.Guild.GetMemberAsync(snowflake);
+                        if (member == null)
+                            return;
+                    }
+                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
+                    builder.AddField("ID", member.Id.ToString(), true);
+                    builder.AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true);
+                    builder.AddField("Time created", string.Join(" ", member.CreationTimestamp.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
+                    builder.AddField("Time joined", string.Join(" ", member.JoinedAt.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
+                    builder.WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl);
+                    builder.WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
+                    string roles = string.Empty;
+                    var rol = member.Roles.ToArray();
+                    for (int j = 0; j < rol.Length; j++)
+                        roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
+                    if (roles.Length > 0)
+                        builder.AddField("Roles", roles, true);
+                    e.Message.RespondAsync("", embed: builder);
+                }
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
                     e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
@@ -166,7 +198,7 @@ namespace ColdOBot
                 {
                     e.Message.RespondAsync("( ͡° ͜ʖ ͡°)");
                 }
-                else if (e.Message.Content.StartsWith($"{prefix}deletemessages") && e.Message.Author.Id == 120196252775350273)
+                else if (e.Message.Content.StartsWith($"{prefix}deletemessages ") && e.Message.Author.Id == 120196252775350273)
                 {
                     string[] split = e.Message.Content.Split(' ');
                     int count = 0;
