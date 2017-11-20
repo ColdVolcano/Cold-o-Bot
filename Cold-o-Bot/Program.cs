@@ -1,29 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using DSharpPlus;
+﻿using DSharpPlus;
 using DSharpPlus.Entities;
-using System.Net.Sockets;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace ColdOBot
 {
     class Program
     {
-        private static byte[] data;
-
-        private static Dictionary<string, string> keys = new Dictionary<string, string>();
-        private static string prefix = Environment.CurrentDirectory.StartsWith("D:\\") ? "??" : "!!";
+        private static readonly Dictionary<string, string> keys = new Dictionary<string, string>();
+        private static readonly string prefix = Environment.CurrentDirectory.StartsWith("D:\\") ? "??" : "!!";
 
         private static DiscordClient discord;
 
-        static private string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColdOBot");
-        static private string configPath = Path.Combine(path, "settings.txt");
+        public static DateTimeOffset TimeStarted;
 
-        static void Main(string[] args)
+        private static readonly string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColdOBot");
+        private static readonly string configPath = Path.Combine(path, "settings.txt");
+
+        private static void Main()
         {
             bool needsRecheck = true;
             do
@@ -64,7 +62,7 @@ namespace ColdOBot
 
             OsuApi.Key = keys["osuKey"];
 
-            discord = new DiscordClient(new DiscordConfig
+            discord = new DiscordClient(new DiscordConfiguration
             {
                 AutoReconnect = true,
                 LargeThreshold = 250,
@@ -76,7 +74,7 @@ namespace ColdOBot
             Run(keys["oauth"], keys["nick"], keys["channel"]).GetAwaiter().GetResult();
         }
 
-        static private void InitializeConfig()
+        private static void InitializeConfig()
         {
 
             if (!Directory.Exists(path))
@@ -126,7 +124,7 @@ namespace ColdOBot
                 Console.WriteLine($" [{e.Timestamp}] [{e.Application}] {e.Message}");
                 if (needsFileLogging)
                 {
-                    File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new string[] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
+                    File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new [] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
                     //Environment.Exit(-1);
                 }
             };
@@ -143,14 +141,16 @@ namespace ColdOBot
                 #region PING COMMAND
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
-                    TimeSpan time = e.Message.CreationTimestamp.LocalDateTime.Subtract(DateTime.Now);
                     DiscordMessage message = null;
-                    string stuff = string.Empty;
                     await Task.Run(async () => message = await e.Message.RespondAsync("pong!"));
-                    await message.ModifyAsync($"{message.Content} `{(e.Message.CreationTimestamp - message.CreationTimestamp).ToString("ss's'ffffff'u'")}`");
+                    await message.ModifyAsync($"{message.Content} `{e.Message.CreationTimestamp - message.CreationTimestamp:ss\'s\'ffffff\'u\'}`");
                 }
                 #endregion
-                else if (e.Message.Content.StartsWith($"{prefix}user"))
+                else if (e.Message.Content.StartsWith($"{prefix}info"))
+                {
+
+                }
+                else if (e.Message.Content.StartsWith($"{prefix}user") && !e.Channel.IsPrivate)
                 {
                     string[] split = e.Message.Content.Split(' ');
                     DiscordMember member;
@@ -159,9 +159,10 @@ namespace ColdOBot
                     else
                     {
                         int i = 0;
-                        ulong snowflake;
-                        for (; !char.IsDigit(split[1], i); i++) ;
-                        if (!ulong.TryParse(split[1].Substring(i, split[1].Length - (i + 1)), out snowflake))
+                        for (; !char.IsDigit(split[1], i); i++)
+                        {
+                        }
+                        if (!ulong.TryParse(split[1].Substring(i, split[1].Length - (i + 1)), out var snowflake))
                             return;
                         member = await e.Guild.GetMemberAsync(snowflake);
                         if (member == null)
@@ -170,60 +171,59 @@ namespace ColdOBot
                     DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
                     builder.AddField("ID", member.Id.ToString(), true);
                     builder.AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true);
-                    builder.AddField("Time created", string.Join(" ", member.CreationTimestamp.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
-                    builder.AddField("Time joined", string.Join(" ", member.JoinedAt.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
-                    builder.WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl);
-                    builder.WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
-                    string roles = string.Empty;
-                    var rol = member.Roles.ToArray();
-                    for (int j = 0; j < rol.Length; j++)
-                        roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
-                    if (roles.Length > 0)
-                        builder.AddField("Roles", roles, true);
-                    e.Message.RespondAsync("", embed: builder);
+                    builder.AddField("Time created", string.Join(" ", member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
+                        builder.AddField("Time joined", string.Join(" ", member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
+                        builder.WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl);
+                        builder.WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
+                        string roles = string.Empty;
+                        var rol = member.Roles.ToArray();
+                        for (int j = 0; j < rol.Length; j++)
+                            roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
+                        if (roles.Length > 0)
+                            builder.AddField("Roles", roles, true);
+                    await e.Message.RespondAsync("", embed: builder);
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
-                    e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
+                    await e.Message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(discord, 320774047267029002));
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}restart") && e.Message.Author.Id == 120196252775350273)
                 {
-                    e.Message.RespondAsync("Will start again in 4 seconds");
-                    await discord.UpdateStatusAsync(user_status: UserStatus.Invisible);
+                    await e.Message.RespondAsync("Will start again in 4 seconds");
+                    await discord.UpdateStatusAsync(userStatus: UserStatus.Invisible);
                     Task.Delay(2000).GetAwaiter().GetResult();
                     Task.Run(discord.DisconnectAsync).GetAwaiter().GetResult();
                     Process.GetCurrentProcess().CloseMainWindow();
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}lenny"))
                 {
-                    e.Message.RespondAsync("( ͡° ͜ʖ ͡°)");
+                    await e.Message.RespondAsync("( ͡° ͜ʖ ͡°)");
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}deletemessages ") && e.Message.Author.Id == 120196252775350273)
                 {
                     string[] split = e.Message.Content.Split(' ');
-                    int count = 0;
-                    if (split.Length == 2 && int.TryParse(split[1], out count) && count > 0 && count < 5)
+                    if (split.Length == 2 && int.TryParse(split[1], out var count) && count > 0 && count < 5)
                     {
-                        e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":put_litter_in_its_place:").ToString());
-                        e.Channel.DeleteMessagesAsync(e.Channel.GetMessagesAsync(count, e.Message.Id).Result);
+                        await e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":put_litter_in_its_place:").ToString());
+                        await e.Channel.DeleteMessagesAsync(e.Channel.GetMessagesAsync(count, e.Message.Id).Result);
                     }
                     else
-                        e.Message.RespondAsync("Parameters do not match");
+                        await e.Message.RespondAsync("Parameters do not match");
                 }
-                else if (e.Message.Content.StartsWith($"{prefix}serverinfo"))
+                else if (e.Message.Content.StartsWith($"{prefix}serverinfo") && !e.Channel.IsPrivate)
                 {
-                    e.Message.RespondAsync("",
+                    await e.Message.RespondAsync("",
                         embed: new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor(),
-                            ThumbnailUrl = e.Guild.IconUrl,
-                        }
-                        .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
-                        .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
-                        .AddField("Members", $"{e.Guild.MemberCount}", true)
-                        .AddField("Time Created", $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new char[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}", true)
-                        .AddField("Roles", $"{e.Guild.Roles.Count}", true)
-                        .AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true));
+                            {
+                                Color = new DiscordColor(),
+                                ThumbnailUrl = e.Guild.IconUrl,
+                            }
+                            .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
+                            .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
+                            .AddField("Members", $"{e.Guild.MemberCount}", true)
+                            .AddField("Time Created", $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}", true)
+                            .AddField("Roles", $"{e.Guild.Roles.Count}", true)
+                            .AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true));
                 }
                 #region PROFILE COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
@@ -233,27 +233,22 @@ namespace ColdOBot
                         switch (split[1])
                         {
                             case "status":
-                                UserStatus status;
-                                bool canParse = Enum.TryParse(split[2], out status);
+                                bool canParse = Enum.TryParse(split[2], out UserStatus status);
                                 if (canParse)
                                 {
-
-                                    discord.UpdateStatusAsync(new Game(discord.CurrentUser.Presence.Game.Name) { StreamType = GameStreamType.NoStream }, status);
-                                    e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
+                                    await discord.UpdateStatusAsync(new DiscordActivity(discord.CurrentUser.Presence.Activity.Name, discord.CurrentUser.Presence.Activity.ActivityType), status);
+                                    await e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
                                 }
                                 else
-                                    e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":octagonal_sign:").ToString() + " Could not parse values");
+                                    await e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":octagonal_sign:").ToString() + " Could not parse values");
                                 break;
                             case "game":
-                                UserStatus lastStatus = discord.CurrentUser.Presence.Status;
-                                discord.UpdateStatusAsync(new Game(string.Join(" ", split.Skip(2).ToArray())), lastStatus);
-                                e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
-                                break;
-                            default:
+                                await discord.UpdateStatusAsync(new DiscordActivity(string.Join(" ", split.Skip(2).ToArray())), discord.CurrentUser.Presence.Status);
+                                await e.Message.RespondAsync(DiscordEmoji.FromName(discord, ":ok:").ToString() + " Succesfully updated online status");
                                 break;
                         }
                     else
-                        e.Message.RespondAsync("Not enough arguments");
+                        await e.Message.RespondAsync("Not enough arguments");
                 }
                 #endregion
                 #region ROLL COMMAND
@@ -266,39 +261,34 @@ namespace ColdOBot
                         switch (split[1].Contains("d"))
                         {
                             case true:
-                                uint dices = 0;
                                 string[] dicesAndMaxes = split[1].Split('d');
-                                if (uint.TryParse(dicesAndMaxes[0], out dices) && ((uint.TryParse(dicesAndMaxes[1], out maxValue) || int.TryParse(dicesAndMaxes[1], out value) && value != 0)))
+                                if (uint.TryParse(dicesAndMaxes[0], out var dices) && ((uint.TryParse(dicesAndMaxes[1], out maxValue) || int.TryParse(dicesAndMaxes[1], out value) && value != 0)))
                                 {
                                     if (dices == 1)
                                         break;
                                     if (dices == 0)
                                     {
-                                        e.Message.RespondAsync("Can't roll a dice I don't have");
+                                        await e.Message.RespondAsync("Can't roll a dice I don't have");
                                         return;
                                     }
                                     if (dices <= 10)
                                     {
                                         if (maxValue == 0 && value == 0)
                                             maxValue = 6;
-                                        string response = $"<@{e.Message.Author.Id}> rolled {dices} dices with {maxValue} sides:\n";
-                                        int diceResult = 0;
+                                        var response = $"<@{e.Message.Author.Id}> rolled {dices} dices with {maxValue} sides:\n";
                                         long totalResult = 0;
-                                        Random ran = new Random();
+                                        var ran = new Random();
                                         for (int i = 0; i < dices; i++)
                                         {
-                                            if (value != 0)
-                                                diceResult = ran.Next(value, -1);
-                                            else
-                                                diceResult = ran.Next(1, (int)maxValue);
+                                            var diceResult = value != 0 ? ran.Next(value, -1) : ran.Next(1, (int)maxValue);
                                             totalResult += diceResult;
                                             response += $"Dice {i + 1} got a {diceResult}\n";
                                         }
                                         response += $"A total of {totalResult} points!";
-                                        e.Message.RespondAsync(response);
+                                        await e.Message.RespondAsync(response);
                                     }
                                     else
-                                        e.Message.RespondAsync($"{e.Author.Mention}: You can only roll up to 10 dices");
+                                        await e.Message.RespondAsync($"{e.Author.Mention}: You can only roll up to 10 dices");
                                 }
                                 else
                                     break;
@@ -308,29 +298,26 @@ namespace ColdOBot
                                     maxValue = 100;
                                 break;
                         }
-                    if (value != 0)
-                        e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled {new Random().Next(value, 0)}");
-                    else
-                        e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled {new Random().Next(1, (int)maxValue)}");
+                        await e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled " + (value != 0?new Random().Next(value, 0) : new Random().Next(1, (int)maxValue)));
                 }
                 #endregion
-                return;
             };
 
             discord.Ready += e =>
             {
-                discord.DebugLogger.LogMessage(LogLevel.Info, "Cold-o-Bot", $"Cold-o-Bot is now running!", DateTime.Now);
+                discord.DebugLogger.LogMessage(LogLevel.Info, "Cold-o-Bot", "Cold-o-Bot is now running!", DateTime.Now);
+                TimeStarted = DateTimeOffset.Now.ToUniversalTime();
                 return Task.Delay(1);
             };
 
             await discord.ConnectAsync();
 
-            Task.Run(() => RunTwitchBot(twitchOauth, twitchNick, twitchTargetChannel));
+            //Task.Run(() => RunTwitchBot(twitchOauth, twitchNick, twitchTargetChannel));
 
             await Task.Delay(-1);
         }
 
-        public static async Task RunTwitchBot(string oauth, string nick, string channel)
+        /*public static async Task RunTwitchBot(string oauth, string nick, string channel)
         {
             TcpClient client = new TcpClient("irc.twitch.tv", 6667);
 
@@ -417,12 +404,12 @@ namespace ColdOBot
                         break;
                 }
             }
-        }
+        }*/
     }
 
     public static class OsuApi
     {
-        private static Uri BaseUri = new Uri("https://osu.ppy.sh/api/");
+        //private static Uri baseUri = new Uri("https://osu.ppy.sh/api/");
         public static string Key;
         public static dynamic GetBeatmaps(int beatmapSetID = 0, int beatmapID = 0, string user = "", OsuMode mode = OsuMode.All, int limit = 500)
         {
@@ -499,11 +486,11 @@ namespace ColdOBot
         Key6 = 131072,
         Key7 = 262144,
         Key8 = 524288,
-        keyMod = Key4 | Key5 | Key6 | Key7 | Key8,
+        KeyMod = Key4 | Key5 | Key6 | Key7 | Key8,
         FadeIn = 1048576,
         Random = 2097152,
         LastMod = 4194304,
-        FreeModAllowed = NoFail | Easy | Hidden | HardRock | SuddenDeath | Flashlight | FadeIn | Relax | Relax2 | SpunOut | keyMod,
+        FreeModAllowed = NoFail | Easy | Hidden | HardRock | SuddenDeath | Flashlight | FadeIn | Relax | Relax2 | SpunOut | KeyMod,
         Key9 = 16777216,
         Key10 = 33554432,
         Key1 = 67108864,
