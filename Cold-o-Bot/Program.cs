@@ -124,7 +124,7 @@ namespace ColdOBot
                 Console.WriteLine($" [{e.Timestamp}] [{e.Application}] {e.Message}");
                 if (needsFileLogging)
                 {
-                    File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new [] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
+                    File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new[] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
                     //Environment.Exit(-1);
                 }
             };
@@ -146,9 +146,14 @@ namespace ColdOBot
                     await message.ModifyAsync($"{message.Content} `{e.Message.CreationTimestamp - message.CreationTimestamp:ss\'s\'ffffff\'u\'}`");
                 }
                 #endregion
-                else if (e.Message.Content.StartsWith($"{prefix}info"))
+                else if (e.Message.Content.StartsWith($"{prefix}about"))
                 {
-
+                    double ramUsage;
+                    using (var proc = Process.GetCurrentProcess())
+                        ramUsage = proc.PrivateMemorySize64 / 1024d / 1024;
+                    var builder = new DiscordEmbedBuilder();
+                    builder.AddField("RAM usage:", ramUsage.ToString("00.0000"), true);
+                    await e.Message.RespondAsync(embed: builder);
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}user") && !e.Channel.IsPrivate)
                 {
@@ -168,20 +173,20 @@ namespace ColdOBot
                         if (member == null)
                             return;
                     }
-                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-                    builder.AddField("ID", member.Id.ToString(), true);
-                    builder.AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true);
-                    builder.AddField("Time created", string.Join(" ", member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
-                        builder.AddField("Time joined", string.Join(" ", member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
-                        builder.WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl);
-                        builder.WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
-                        string roles = string.Empty;
-                        var rol = member.Roles.ToArray();
-                        for (int j = 0; j < rol.Length; j++)
-                            roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
-                        if (roles.Length > 0)
-                            builder.AddField("Roles", roles, true);
-                    await e.Message.RespondAsync("", embed: builder);
+                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+                    .AddField("ID", member.Id.ToString(), true)
+                    .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
+                    .AddField("Time created", string.Join(" ", member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
+                    .AddField("Time joined", string.Join(" ", member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
+                    .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
+                    .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
+                    string roles = string.Empty;
+                    var rol = member.Roles.ToArray();
+                    for (int j = 0; j < rol.Length; j++)
+                        roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
+                    if (roles.Length > 0)
+                        builder.AddField("Roles", roles, true);
+                    await e.Message.RespondAsync(embed: builder);
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
@@ -214,10 +219,10 @@ namespace ColdOBot
                 {
                     await e.Message.RespondAsync("",
                         embed: new DiscordEmbedBuilder
-                            {
-                                Color = new DiscordColor(),
-                                ThumbnailUrl = e.Guild.IconUrl,
-                            }
+                        {
+                            Color = new DiscordColor(),
+                            ThumbnailUrl = e.Guild.IconUrl,
+                        }
                             .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
                             .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
                             .AddField("Members", $"{e.Guild.MemberCount}", true)
@@ -298,7 +303,7 @@ namespace ColdOBot
                                     maxValue = 100;
                                 break;
                         }
-                        await e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled " + (value != 0?new Random().Next(value, 0) : new Random().Next(1, (int)maxValue)));
+                    await e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled " + (value != 0 ? new Random().Next(value, 0) : new Random().Next(1, (int)maxValue)));
                 }
                 #endregion
             };
@@ -312,99 +317,8 @@ namespace ColdOBot
 
             await discord.ConnectAsync();
 
-            //Task.Run(() => RunTwitchBot(twitchOauth, twitchNick, twitchTargetChannel));
-
             await Task.Delay(-1);
         }
-
-        /*public static async Task RunTwitchBot(string oauth, string nick, string channel)
-        {
-            TcpClient client = new TcpClient("irc.twitch.tv", 6667);
-
-            NetworkStream stream = client.GetStream();
-
-            string loginstring = $"PASS oauth:{oauth}\r\nNICK {nick}\r\n";
-            byte[] login = Encoding.ASCII.GetBytes(loginstring);
-            stream.Write(login, 0, login.Length);
-            discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", "Sent login", DateTime.Now);
-            discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", loginstring, DateTime.Now);
-
-            data = new byte[512];
-
-            string responseData = string.Empty;
-
-            int bytes = stream.Read(data, 0, data.Length);
-            responseData = Encoding.ASCII.GetString(data, 0, bytes);
-            discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", $"Received WELCOME: \r\n{responseData}", DateTime.Now);
-
-            string joinstring = "JOIN " + "#" + channel + "\r\n";
-            byte[] join = Encoding.ASCII.GetBytes(joinstring);
-            stream.Write(join, 0, join.Length);
-            discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", $"Sent channel join.\r\n{joinstring}", DateTime.Now);
-
-            discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", "TWITCH CHAT HAS BEGUN. BE CAREFUL", DateTime.Now);
-
-            while (true)
-            {
-                byte[] myReadBuffer = new byte[1024];
-                StringBuilder myCompleteMessage = new StringBuilder();
-                int numberOfBytesRead = 0;
-                do
-                {
-                    try { numberOfBytesRead = stream.Read(myReadBuffer, 0, myReadBuffer.Length); }
-                    catch (Exception e) { discord.DebugLogger.LogMessage(LogLevel.Critical, "Twitch-o-Bot", $"OH SHIT SOMETHING WENT WRONG {e}", DateTime.Now); }
-
-                    myCompleteMessage.AppendFormat("{0}", Encoding.ASCII.GetString(myReadBuffer, 0, numberOfBytesRead));
-                } while (stream.DataAvailable);
-                discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", myCompleteMessage.ToString(), DateTime.Now);
-
-                switch (myCompleteMessage.ToString())
-                {
-                    case "PING :tmi.twitch.tv\r\n":
-                        try
-                        {
-                            byte[] say = Encoding.ASCII.GetBytes("PONG :tmi.twitch.tv\r\n");
-                            stream.Write(say, 0, say.Length);
-                            discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", "Received PING, sent PONG", DateTime.Now);
-                        }
-                        catch (Exception e) { discord.DebugLogger.LogMessage(LogLevel.Critical, "Twitch-o-Bot", $"OH SHIT SOMETHING WENT WRONG {e}", DateTime.Now); }
-                        break;
-                    default:
-                        string[] message;
-                        string[] preamble;
-                        try
-                        {
-                            string messageParser = myCompleteMessage.ToString();
-                            message = messageParser.Split(':');
-                            preamble = message[1].Split(' ');
-                            string tochat;
-                            string[] sendingUser = preamble[0].Split('!');
-
-                            if (preamble[1] == "PRIVMSG")
-                            {
-                                tochat = sendingUser[0] + ": " + message[2];
-
-                                if (!tochat.Contains("\n"))
-                                {
-                                    tochat = tochat + "\n";
-                                }
-
-                                if (sendingUser[0] != "moobot" && sendingUser[0] != "whale_bot")
-                                {
-                                    discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", tochat.TrimEnd('\n'), DateTime.Now);
-                                }
-                            }
-                            else if (preamble[1] == "JOIN")
-                            {
-                                tochat = "JOINED: " + sendingUser[0];
-                                discord.DebugLogger.LogMessage(LogLevel.Info, "Twitch-o-Bot", tochat.TrimEnd('\n'), DateTime.Now);
-                            }
-                        }
-                        catch (Exception e) { discord.DebugLogger.LogMessage(LogLevel.Critical, "Twitch-o-Bot", $"OH SHIT SOMETHING WENT WRONG {e}", DateTime.Now); }
-                        break;
-                }
-            }
-        }*/
     }
 
     public static class OsuApi
