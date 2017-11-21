@@ -151,8 +151,17 @@ namespace ColdOBot
                     double ramUsage;
                     using (var proc = Process.GetCurrentProcess())
                         ramUsage = proc.PrivateMemorySize64 / 1024d / 1024;
-                    var builder = new DiscordEmbedBuilder();
-                    builder.AddField("RAM usage:", ramUsage.ToString("00.0000"), true);
+                    var time = (DateTime.Now - TimeStarted);
+                    var builder = new DiscordEmbedBuilder()
+                        .AddField("RAM usage:", ramUsage.ToString("00.0000"), true)
+                        .AddField("Active since",
+                            $"{string.Join(" ", TimeStarted.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))} (it's been " +
+                            (time.Days > 0 ? time.Days + "d" : "") + (time.Hours > 0 ? time.Hours + "h" : "") +
+                            (time.Minutes > 0 ? time.Minutes + "m" : "") +
+                            (time.Seconds + Math.Round(time.Milliseconds / 1000f) > 0
+                                ? time.Seconds + Math.Round(time.Milliseconds / 1000f) + "s"
+                                : "") + ")", true)
+                        .AddField("Lib", $"DSharp+ v{discord.VersionString}");
                     await e.Message.RespondAsync(embed: builder);
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}user") && !e.Channel.IsPrivate)
