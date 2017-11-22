@@ -110,12 +110,18 @@ namespace ColdOBot
                     case LogLevel.Error:
                     case LogLevel.Critical:
                         needsFileLogging = true;
-                        if (e.Level == LogLevel.Warning)
-                            Console.BackgroundColor = ConsoleColor.DarkYellow;
-                        if (e.Level == LogLevel.Error)
-                            Console.BackgroundColor = ConsoleColor.DarkRed;
-                        if (e.Level == LogLevel.Critical)
-                            Console.BackgroundColor = ConsoleColor.Red;
+                        switch (e.Level)
+                        {
+                            case LogLevel.Warning:
+                                Console.BackgroundColor = ConsoleColor.DarkYellow;
+                                break;
+                            case LogLevel.Error:
+                                Console.BackgroundColor = ConsoleColor.DarkRed;
+                                break;
+                            case LogLevel.Critical:
+                                Console.BackgroundColor = ConsoleColor.Red;
+                                break;
+                        }
                         break;
                 }
                 Console.ForegroundColor = ConsoleColor.Black;
@@ -149,8 +155,8 @@ namespace ColdOBot
                     double ramUsage;
                     using (var proc = Process.GetCurrentProcess())
                         ramUsage = proc.PrivateMemorySize64 / 1024d / 1024;
-                    var time = (DateTime.Now - TimeStarted);
-                    var builder = new DiscordEmbedBuilder()
+                    var time = DateTime.Now - TimeStarted;
+                    await e.Message.RespondAsync(embed: new DiscordEmbedBuilder()
                         .AddField("RAM usage:", ramUsage.ToString("00.0000") + "MB", true)
                         .AddField("Active since",
                             $"{string.Join(" ", TimeStarted.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))} (it's been " +
@@ -159,47 +165,72 @@ namespace ColdOBot
                             (time.Seconds + Math.Round(time.Milliseconds / 1000f) > 0
                                 ? time.Seconds + Math.Round(time.Milliseconds / 1000f) + "s"
                                 : "") + ")", true)
-                        .AddField("Lib", $"DSharp+ v{discord.VersionString}");
-                    await e.Message.RespondAsync(embed: builder);
+                        .AddField("Lib", $"DSharp+ v{discord.VersionString}"));
                 }
-                else if (e.Message.Content.StartsWith($"{prefix}user") && !e.Channel.IsPrivate)
+                else if (e.Message.Content.StartsWith($"{prefix}user"))
                 {
                     string[] split = e.Message.Content.Split(' ');
-                    DiscordMember member;
-                    if (split.Length == 1)
-                        member = await e.Guild.GetMemberAsync(e.Message.Author.Id);
-                    else
+
+                    if (!e.Channel.IsPrivate)
                     {
-                        int i = 0;
-                        for (; !char.IsDigit(split[1], i); i++)
+                        DiscordMember member;
+                        if (split.Length == 1)
+                            member = await e.Guild.GetMemberAsync(e.Message.Author.Id);
+                        else
                         {
+
+                            int i = 0;
+                            for (; !char.IsDigit(split[1], i); i++)
+                            {
+                            }
+                            if (!ulong.TryParse(split[1].Substring(i, split[1].Length - (i + 1)), out var snowflake))
+                                return;
+                            member = await e.Guild.GetMemberAsync(snowflake);
+                            if (member == null)
+                                return;
                         }
-                        if (!ulong.TryParse(split[1].Substring(i, split[1].Length - (i + 1)), out var snowflake))
-                            return;
-                        member = await e.Guild.GetMemberAsync(snowflake);
-                        if (member == null)
-                            return;
-                    }
-                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
-                        .AddField("ID", member.Id.ToString(), true)
-                        .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
-                        .AddField("Time created",
-                            string.Join(" ",
-                                member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
-                                    .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
-                        .AddField("Time joined",
+
+                        DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+                            .AddField("ID", member.Id.ToString(), true)
+                            .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
+                            .AddField("Time created",
+                                string.Join(" ",
+                                    member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
+                                        .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
+                            .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
+                            .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
+                        builder.AddField("Time joined",
                             string.Join(" ",
                                 member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
-                                    .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
-                        .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
-                        .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
-                    string roles = string.Empty;
-                    var rol = member.Roles.ToArray();
-                    for (int j = 0; j < rol.Length; j++)
-                        roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
-                    if (roles.Length > 0)
-                        builder.AddField("Roles", roles, true);
-                    await e.Message.RespondAsync(embed: builder);
+                                    .TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
+                        string roles = string.Empty;
+                        var rol = member.Roles.ToArray();
+                        for (int j = 0; j < rol.Length; j++)
+                            roles += rol[j].Name + (j + 1 == rol.Length ? "" : ", ");
+                        if (roles.Length > 0)
+                            builder.AddField("Roles", roles, true);
+                        await e.Message.RespondAsync(embed: builder);
+                    }
+                    else
+                    {
+                        DiscordUser member = e.Author;
+
+                        if (split.Length > 1)
+                        {
+                            await e.Message.RespondAsync("Can't add arguments in PM");
+                            return;
+                        }
+                        await e.Message.RespondAsync(embed: new DiscordEmbedBuilder()
+                            .AddField("ID", member.Id.ToString(), true)
+                            .AddField("ID", member.Id.ToString(), true)
+                            .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
+                            .AddField("Time created",
+                                string.Join(" ",
+                                    member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                        .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
+                            .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
+                            .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl));
+                    }
                 }
                 else if (e.Message.Content.StartsWith($"{prefix}twownk"))
                 {
