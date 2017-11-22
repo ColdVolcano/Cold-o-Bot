@@ -125,7 +125,7 @@ namespace ColdOBot
                 if (needsFileLogging)
                 {
                     File.AppendAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChangeWatcher", "log.txt"), new[] { $"[{e.Level}] [{e.Timestamp}] [{e.Application}] {e.Message}" });
-                    //Environment.Exit(-1);
+                    Environment.Exit(-1);
                 }
             };
 
@@ -138,14 +138,12 @@ namespace ColdOBot
             discord.MessageCreated += async e =>
             {
                 discord.DebugLogger.LogMessage(LogLevel.Debug, "Cold-o-Bot", e.Message.Author.Username + ": " + e.Message.Content, DateTime.Now);
-                #region PING COMMAND
                 if (e.Message.Content.StartsWith($"{prefix}ping"))
                 {
                     DiscordMessage message = null;
                     await Task.Run(async () => message = await e.Message.RespondAsync("pong!"));
                     await message.ModifyAsync($"{message.Content} `{e.Message.CreationTimestamp - message.CreationTimestamp:ss\'s\'ffffff\'u\'}`");
                 }
-                #endregion
                 else if (e.Message.Content.StartsWith($"{prefix}about"))
                 {
                     double ramUsage;
@@ -249,7 +247,6 @@ namespace ColdOBot
                                 $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)",
                                 true));
                 }
-                #region PROFILE COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
                 {
                     string[] split = e.Message.Content.Split(' ');
@@ -274,8 +271,6 @@ namespace ColdOBot
                     else
                         await e.Message.RespondAsync("Not enough arguments");
                 }
-                #endregion
-                #region ROLL COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}roll"))
                 {
                     string[] split = e.Message.Content.Split(' ');
@@ -324,7 +319,6 @@ namespace ColdOBot
                         }
                     await e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled " + (value != 0 ? new Random().Next(value, 0) : new Random().Next(1, (int)maxValue)));
                 }
-                #endregion
             };
 
             discord.Ready += e =>
