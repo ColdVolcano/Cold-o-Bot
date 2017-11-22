@@ -32,7 +32,7 @@ namespace ColdOBot
                     continue;
                 }
                 string line;
-                StreamReader reader = new StreamReader(configPath);
+                var reader = new StreamReader(configPath);
                 while ((line = reader.ReadLine()) != null)
                 {
                     string[] split = line.Split('=');
@@ -183,12 +183,18 @@ namespace ColdOBot
                             return;
                     }
                     DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
-                    .AddField("ID", member.Id.ToString(), true)
-                    .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
-                    .AddField("Time created", string.Join(" ", member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
-                    .AddField("Time joined", string.Join(" ", member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
-                    .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
-                    .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
+                        .AddField("ID", member.Id.ToString(), true)
+                        .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
+                        .AddField("Time created",
+                            string.Join(" ",
+                                member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                    .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
+                        .AddField("Time joined",
+                            string.Join(" ",
+                                member.JoinedAt.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                    .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
+                        .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
+                        .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
                     string roles = string.Empty;
                     var rol = member.Roles.ToArray();
                     for (int j = 0; j < rol.Length; j++)
@@ -228,16 +234,20 @@ namespace ColdOBot
                 {
                     await e.Message.RespondAsync("",
                         embed: new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor(),
-                            ThumbnailUrl = e.Guild.IconUrl,
-                        }
+                            {
+                                Color = new DiscordColor(),
+                                ThumbnailUrl = e.Guild.IconUrl,
+                            }
                             .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
                             .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
                             .AddField("Members", $"{e.Guild.MemberCount}", true)
-                            .AddField("Time Created", $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}", true)
+                            .AddField("Time Created",
+                                $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}",
+                                true)
                             .AddField("Roles", $"{e.Guild.Roles.Count}", true)
-                            .AddField("Channels", $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)", true));
+                            .AddField("Channels",
+                                $"{e.Guild.Channels.Count} ({e.Guild.Channels.Count(c => c.Type == ChannelType.Text)} text, {e.Guild.Channels.Count(c => c.Type == ChannelType.Voice)} voice)",
+                                true));
                 }
                 #region PROFILE COMMAND
                 else if (e.Message.Content.StartsWith($"{prefix}profile") && e.Message.Author.Id == 120196252775350273)
