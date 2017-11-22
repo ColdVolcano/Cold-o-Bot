@@ -12,7 +12,7 @@ namespace ColdOBot
     class Program
     {
         private static readonly Dictionary<string, string> keys = new Dictionary<string, string>();
-        private static readonly string prefix = Environment.CurrentDirectory.StartsWith("D:\\") ? "??" : "!!";
+        private static string prefix = "!!";
 
         private static DiscordClient discord;
 
@@ -185,11 +185,11 @@ namespace ColdOBot
                         .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
                         .AddField("Time created",
                             string.Join(" ",
-                                member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
                                     .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
                         .AddField("Time joined",
                             string.Join(" ",
-                                member.JoinedAt.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
                                     .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
                         .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
                         .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
@@ -232,15 +232,15 @@ namespace ColdOBot
                 {
                     await e.Message.RespondAsync("",
                         embed: new DiscordEmbedBuilder
-                            {
-                                Color = new DiscordColor(),
-                                ThumbnailUrl = e.Guild.IconUrl,
-                            }
+                        {
+                            Color = new DiscordColor(),
+                            ThumbnailUrl = e.Guild.IconUrl,
+                        }
                             .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
                             .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
                             .AddField("Members", $"{e.Guild.MemberCount}", true)
                             .AddField("Time Created",
-                                $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}",
+                                $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}",
                                 true)
                             .AddField("Roles", $"{e.Guild.Roles.Count}", true)
                             .AddField("Channels",
@@ -329,6 +329,8 @@ namespace ColdOBot
             };
 
             await discord.ConnectAsync();
+
+            prefix = discord.CurrentUser.Username.EndsWith("Beta") ? "??" : "!!";
 
             await Task.Delay(-1);
         }
