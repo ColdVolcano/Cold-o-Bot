@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Globalization;
 using Newtonsoft.Json;
+// ReSharper disable InconsistentNaming
 
 namespace ColdOBot.Helpers.Osu
 {
     public struct OsuBeatmap
     {
+#pragma warning disable IDE1006
         [JsonProperty("approved")]
         private string approved { set => Enum.TryParse(value, out RankedState); }
 
@@ -146,5 +148,6 @@ namespace ColdOBot.Helpers.Osu
 
         [JsonIgnore]
         public int? MaxCombo;
+#pragma warning restore IDE1006
     }
 }

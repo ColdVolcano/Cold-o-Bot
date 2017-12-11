@@ -93,10 +93,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands.cs" />
+    <Compile Include="Helpers\Osu\LinkDecoder.cs" />
     <Compile Include="Helpers\Osu\OsuBeatmap.cs" />
     <Compile Include="Helpers\Osu\OsuGenre.cs" />
     <Compile Include="Helpers\Osu\OsuLanguage.cs" />
+    <Compile Include="Helpers\Osu\OsuUser.cs" />
     <Compile Include="Helpers\Osu\RankedState.cs" />
+    <Compile Include="Helpers\Osu\Requests\GetUserRequest.cs" />
     <Compile Include="Helpers\Osu\Requests\OsuApiRequest.cs" />
     <Compile Include="Helpers\Osu\OsuMode.cs" />
     <Compile Include="Helpers\Osu\Requests\GetBeatmapsRequest.cs" />
