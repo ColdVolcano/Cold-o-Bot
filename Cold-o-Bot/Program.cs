@@ -154,7 +154,7 @@ namespace ColdOBot
                         await message.ModifyAsync(
                             $"{message.Content} `{e.Message.CreationTimestamp - message.CreationTimestamp:ss\'s\'ffffff\'u\'}`");
                     }
-                    else if (content.StartsWith("test"))
+                    /*else if (content.StartsWith("test"))
                     {
                         var split = content.Split(' ').Skip(1).ToArray();
                         if (split.Length == 0)
@@ -183,7 +183,7 @@ namespace ColdOBot
                             return;
                         }
                         await e.Message.RespondAsync("Given string was not a beatmap or beatmapset link");
-                    }
+                    }*/
                     else if (content.StartsWith("about"))
                     {
                         double ramUsage;
