@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json;
+
 // ReSharper disable InconsistentNaming
 
-namespace ColdOBot.Helpers.Osu
+namespace ColdOBot.Osu
 {
     public struct OsuUser
     {

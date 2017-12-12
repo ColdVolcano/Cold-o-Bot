@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace ColdOBot.Helpers.Osu
+namespace ColdOBot.Osu
 {
     public class LinkDecoder
     {

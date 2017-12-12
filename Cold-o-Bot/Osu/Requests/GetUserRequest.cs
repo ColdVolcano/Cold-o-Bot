@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ColdOBot.Helpers.Osu.Requests
+namespace ColdOBot.Osu.Requests
 {
-    public class GetUserRequest : ApiRequest<List<OsuUser>>
+    public class GetUserRequest : OsuApiRequest<List<OsuUser>>
     {
         public GetUserRequest(string apiKey, bool isRipple, string user, bool isID = false, OsuMode mode = OsuMode.Osu, int days = 1) : base(apiKey, isRipple)
         {

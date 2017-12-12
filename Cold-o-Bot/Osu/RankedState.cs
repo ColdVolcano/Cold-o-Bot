@@ -1,4 +1,4 @@
-﻿namespace ColdOBot.Helpers.Osu
+﻿namespace ColdOBot.Osu
 {
     public enum RankedState
     {

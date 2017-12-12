@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace ColdOBot.Helpers.Osu.Requests
+namespace ColdOBot.Osu.Requests
 {
-    public class GetBeatmapsRequest : ApiRequest<List<OsuBeatmap>>
+    public class GetBeatmapsRequest : OsuApiRequest<List<OsuBeatmap>>
     {
         public GetBeatmapsRequest(string apiKey, bool isRipple, int beatmapSetID = 0, int beatmapID = 0, string user = null, OsuMode mode = OsuMode.All, int limit = 500) : base(apiKey, isRipple)
         {
