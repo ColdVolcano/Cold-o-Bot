@@ -9,13 +9,13 @@ namespace ColdOBot.Osu.Requests
         {
             if (string.IsNullOrEmpty(user) || string.IsNullOrWhiteSpace(user))
                 throw new ArgumentException($"{nameof(user)} must be a not null string, but it was {user}");
-            Parameters.Add($"u={user}");
+            Parameters.Add("u", $"{user}");
             if (isID)
-                Parameters.Add("type=id");
+                Parameters.Add("type", "id");
             if (mode > OsuMode.Osu)
-                Parameters.Add($"m={(int)mode}");
+                Parameters.Add("m",$"{(int)mode}");
             if (days > 1)
-                Parameters.Add($"event_days={Math.Min(31, days)}");
+                Parameters.Add("event_days",$"{Math.Min(31, days)}");
         }
 
         protected override string Target => "get_user";

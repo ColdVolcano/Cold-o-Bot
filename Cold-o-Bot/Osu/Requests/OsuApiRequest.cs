@@ -12,7 +12,7 @@ namespace ColdOBot.Osu.Requests
 
         protected OsuApiRequest(string apiKey, bool isRipple)
         {
-            Parameters.Add($"k={apiKey}");
+            Parameters.Add("k", $"{apiKey}");
             this.isRipple = isRipple;
         }
     }

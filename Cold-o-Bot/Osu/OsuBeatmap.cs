@@ -30,13 +30,13 @@ namespace ColdOBot.Osu
         [JsonProperty("artist")]
         public string Artist;
 
-        [JsonProperty("beamtap_id")]
+        [JsonProperty("beatmap_id")]
         private string beatmap_id { set => int.TryParse(value, out BeatmapID); }
 
         [JsonIgnore]
         public int BeatmapID;
 
-        [JsonProperty("beamtapset_id")]
+        [JsonProperty("beatmapset_id")]
         private string beatmapset_id { set => int.TryParse(value, out BeatmapsetID); }
 
         [JsonIgnore]

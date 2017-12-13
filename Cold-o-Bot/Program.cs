@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace ColdOBot
 {
-    class Program
+    static class Program
     {
         private static readonly Dictionary<string, string> keys = new Dictionary<string, string>();
         private static string prefix = "!!";
 
         private static DiscordClient discord;
 
-        public static DateTimeOffset TimeStarted;
+        private static DateTimeOffset timeStarted;
 
         private static readonly string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColdOBot");
         private static readonly string configPath = Path.Combine(path, "settings.txt");
@@ -69,7 +69,7 @@ namespace ColdOBot
                 TokenType = TokenType.Bot,
                 UseInternalLogHandler = false
             });
-            Run(keys["oauth"], keys["nick"], keys["channel"]).GetAwaiter().GetResult();
+            Run().GetAwaiter().GetResult();
         }
 
         private static void InitializeConfig()
@@ -91,7 +91,7 @@ namespace ColdOBot
             File.WriteAllLines(configPath, lines);
         }
 
-        public static async Task Run(string twitchOauth, string twitchNick, string twitchTargetChannel)
+        private static async Task Run()
         {
             discord.DebugLogger.LogMessageReceived += (o, e) =>
             {
@@ -164,19 +164,17 @@ namespace ColdOBot
                         bool isLink = LinkDecoder.IsValidBeatmapForImage(split[0], out var type);
                         if (isLink)
                         {
-                            string response = "string was a link ";
+                            string response;
                             if (type.IsBeatmapset)
-                                response += "(beatmapset) ";
-                            else
-                                response += "(beatmap) ";
-                            if (type.IsNewSite)
-                                response += "(new site) ";
+                            {
+                                if (type.IsNewSite || type.IsOldSite)
+                                    response = "https://assets.ppy.sh/beatmaps/" + split[0].Split('/').Last() + "/covers/cover.jpg";
+                                else
+                                    response = "https://assets.ppy.sh/beatmaps/" + split[0].TrimEnd('s') + "/covers/cover.jpg";
+                            }
                             else
                             {
-                                if (type.IsOldSite)
-                                    response += "(old site) ";
-                                else
-                                    response += "(id) ";
+                                response = "https://assets.ppy.sh/beatmaps/" + (await new GetBeatmapsRequest(keys["osuKey"], false, beatmapID: int.Parse(split[0].Split('/').Last())).Perform()).Last().BeatmapsetID + "/covers/cover.jpg";
                             }
                             await e.Message.RespondAsync(response);
                             return;
@@ -188,11 +186,11 @@ namespace ColdOBot
                         double ramUsage;
                         using (var proc = Process.GetCurrentProcess())
                             ramUsage = proc.PrivateMemorySize64 / 1024d / 1024;
-                        var time = DateTime.Now - TimeStarted;
+                        var time = DateTime.Now - timeStarted;
                         await e.Message.RespondAsync(embed: new DiscordEmbedBuilder()
                             .AddField("RAM usage:", ramUsage.ToString("00.0000") + "MB", true)
                             .AddField("Active since",
-                                $"{string.Join(" ", TimeStarted.ToUniversalTime().ToString().Split(new[] {' '}, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))} (it's been " +
+                                $"{string.Join(" ", timeStarted.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))} (it's been " +
                                 (time.Days > 0 ? time.Days + "d" : "") + (time.Hours > 0 ? time.Hours + "h" : "") +
                                 (time.Minutes > 0 ? time.Minutes + "m" : "") +
                                 (time.Seconds + Math.Round(time.Milliseconds / 1000f) > 0
@@ -229,13 +227,13 @@ namespace ColdOBot
                                 .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
                                 .AddField("Time created",
                                     string.Join(" ",
-                                        member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                        member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
                                             .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
                                 .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
                                 .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl);
                             builder.AddField("Time joined",
                                 string.Join(" ",
-                                    member.JoinedAt.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                    member.JoinedAt.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
                                         .TakeWhile(s => s[0] != '-' && s[0] != '+')), true);
                             string roles = string.Empty;
                             var rol = member.Roles.ToArray();
@@ -260,7 +258,7 @@ namespace ColdOBot
                                 .AddField("Status", member.Presence?.Status.ToString() ?? "Offline", true)
                                 .AddField("Time created",
                                     string.Join(" ",
-                                        member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5)
+                                        member.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5)
                                             .TakeWhile(s => s[0] != '-' && s[0] != '+')), true)
                                 .WithAuthor($"{member.Username}#{member.Discriminator}", icon_url: member.AvatarUrl)
                                 .WithThumbnailUrl(member.AvatarUrl ?? member.DefaultAvatarUrl));
@@ -299,15 +297,15 @@ namespace ColdOBot
                     {
                         await e.Message.RespondAsync("",
                             embed: new DiscordEmbedBuilder
-                                {
-                                    Color = new DiscordColor(),
-                                    ThumbnailUrl = e.Guild.IconUrl,
-                                }
+                            {
+                                Color = new DiscordColor(),
+                                ThumbnailUrl = e.Guild.IconUrl,
+                            }
                                 .WithAuthor(e.Guild.Name, icon_url: e.Guild.IconUrl)
                                 .AddField("Owner", $"{e.Guild.Owner.Username}#{e.Guild.Owner.Discriminator}", true)
                                 .AddField("Members", $"{e.Guild.MemberCount}", true)
                                 .AddField("Time Created",
-                                    $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] {' '}, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}",
+                                    $"{string.Join(" ", e.Guild.CreationTimestamp.ToUniversalTime().ToString().Split(new[] { ' ' }, 5).TakeWhile(s => s[0] != '-' && s[0] != '+'))}",
                                     true)
                                 .AddField("Roles", $"{e.Guild.Roles.Count}", true)
                                 .AddField("Channels",
@@ -381,7 +379,7 @@ namespace ColdOBot
                                             {
                                                 var diceResult = value != 0
                                                     ? ran.Next(value, -1)
-                                                    : ran.Next(1, (int) maxValue);
+                                                    : ran.Next(1, (int)maxValue);
                                                 totalResult += diceResult;
                                                 response += $"Dice {i + 1} got a {diceResult}\n";
                                             }
@@ -405,23 +403,23 @@ namespace ColdOBot
                         await e.Message.RespondAsync($"<@{e.Message.Author.Id}> rolled " +
                                                      (value != 0
                                                          ? new Random().Next(value, 0)
-                                                         : new Random().Next(1, (int) maxValue)));
+                                                         : new Random().Next(1, (int)maxValue)));
                     }
                 }
             };
 
-        discord.Ready += e =>
-            {
-                discord.DebugLogger.LogMessage(LogLevel.Info, "Cold-o-Bot", "Cold-o-Bot is now running!", DateTime.Now);
-                TimeStarted = DateTimeOffset.Now.ToUniversalTime();
-                return Task.Delay(1);
-            };
+            discord.Ready += e =>
+                {
+                    discord.DebugLogger.LogMessage(LogLevel.Info, "Cold-o-Bot", "Cold-o-Bot is now running!", DateTime.Now);
+                    timeStarted = DateTimeOffset.Now.ToUniversalTime();
+                    return Task.Delay(1);
+                };
 
-    await discord.ConnectAsync();
+            await discord.ConnectAsync();
 
-    prefix = discord.CurrentUser.Username.EndsWith("Beta") ? "??" : "!!";
+            prefix = discord.CurrentUser.Username.EndsWith("Beta") ? "??" : "!!";
 
             await Task.Delay(-1);
-}
+        }
     }
 }
