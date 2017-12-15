@@ -23,7 +23,7 @@ namespace ColdOBot.Net
         public async Task<string> Perform()
         {
             if (RequestMethod == RequestMethod.Get)
-                return await client.GetStringAsync(BaseUri + Target + "?" + string.Join("&", Parameters.Select(s => s.Key + "=" + s.Value)));
+                return await client.GetStringAsync(BaseUri + Target + (Parameters.Count > 0 ? "?" + string.Join("&", Parameters.Select(s => s.Key + "=" + s.Value)) : ""));
             return await (await client.PostAsync(BaseUri + Target, new FormUrlEncodedContent(Parameters))).Content.ReadAsStringAsync();
         }
 
