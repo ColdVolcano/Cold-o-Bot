@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ColdOBot
 {
-    static class Program
+    internal static class Program
     {
         private static readonly Dictionary<string, string> keys = new Dictionary<string, string>();
         private static string prefix = "!!";
@@ -161,6 +161,20 @@ namespace ColdOBot
                             await e.Message.RespondAsync("something else?");
                             return;
                         }
+                        switch (split[0])
+                        {
+                            case "0":
+                                await e.Message.RespondAsync(((int)await new ScoreImageRequest("ColdVolcano", 848345, Mode.Osu).Perform()).ToString());
+                                break;
+                            case "1":
+                                await e.Message.RespondAsync(((int)await new ScoreImageRequest("jakads", 249346, Mode.Mania).Perform()).ToString());
+                                break;
+                            case "2":
+                                await e.Message.RespondAsync(((int)await new ScoreImageRequest("ColdVolcao", 848345, Mode.Osu).Perform()).ToString());
+                                break;
+                        }
+                    }
+                    {
                         bool isLink = LinkDecoder.IsValidBeatmapForImage(split[0], out var type);
                         if (isLink)
                         {

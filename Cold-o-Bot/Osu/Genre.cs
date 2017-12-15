@@ -1,6 +1,6 @@
 ﻿namespace ColdOBot.Osu
 {
-    public enum OsuGenre
+    public enum Genre
     {
         Any = 0,
         Unspecified = 1,

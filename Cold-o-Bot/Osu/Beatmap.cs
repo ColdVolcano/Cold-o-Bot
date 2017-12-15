@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace ColdOBot.Osu
 {
-    public struct OsuBeatmap
+    public struct Beatmap
     {
 #pragma warning disable IDE1006
         [JsonProperty("approved")]
@@ -94,13 +94,13 @@ namespace ColdOBot.Osu
         private string genre_id { set => Enum.TryParse(value, out Genre); }
 
         [JsonIgnore]
-        public OsuGenre Genre;
+        public Genre Genre;
 
         [JsonProperty("language_id")]
         private string language_id { set => Enum.TryParse(value, out Language); }
 
         [JsonIgnore]
-        public OsuLanguage Language;
+        public Language Language;
 
         [JsonProperty("title")]
         public string Title;
@@ -121,7 +121,7 @@ namespace ColdOBot.Osu
         private string mode { set => Enum.TryParse(value, out Gamemode); }
 
         [JsonIgnore]
-        public OsuMode Gamemode;
+        public Mode Gamemode;
 
         [JsonProperty("tags")]
         public string Tags;

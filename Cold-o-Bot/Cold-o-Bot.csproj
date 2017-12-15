@@ -93,16 +93,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands.cs" />
+    <Compile Include="LookAtMyScore\Image.cs" />
+    <Compile Include="LookAtMyScore\MultiScore.cs" />
     <Compile Include="Net\ApiRequest.cs" />
     <Compile Include="Osu\LinkDecoder.cs" />
-    <Compile Include="Osu\OsuBeatmap.cs" />
-    <Compile Include="Osu\OsuGenre.cs" />
-    <Compile Include="Osu\OsuLanguage.cs" />
-    <Compile Include="Osu\OsuUser.cs" />
+    <Compile Include="Osu\Beatmap.cs" />
+    <Compile Include="Osu\Genre.cs" />
+    <Compile Include="Osu\Language.cs" />
+    <Compile Include="Osu\Mod.cs" />
+    <Compile Include="Osu\Score.cs" />
+    <Compile Include="Osu\User.cs" />
     <Compile Include="Osu\RankedState.cs" />
+    <Compile Include="LookAtMyScore\Requests\ScoreImageRequest.cs" />
     <Compile Include="Osu\Requests\GetUserRequest.cs" />
     <Compile Include="Osu\Requests\OsuApiRequest.cs" />
-    <Compile Include="Osu\OsuMode.cs" />
+    <Compile Include="Osu\Mode.cs" />
     <Compile Include="Osu\Requests\GetBeatmapsRequest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

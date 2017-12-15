@@ -1,6 +1,6 @@
 ﻿namespace ColdOBot.Osu
 {
-    public enum OsuLanguage
+    public enum Language
     {
         Any = 0,
         Other = 1,

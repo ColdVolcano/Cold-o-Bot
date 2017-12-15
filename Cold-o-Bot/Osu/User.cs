@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace ColdOBot.Osu
 {
-    public struct OsuUser
+    public struct User
     {
 #pragma warning disable IDE1006
         [JsonProperty("user_id")]
