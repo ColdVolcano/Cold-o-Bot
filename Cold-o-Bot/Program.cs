@@ -173,8 +173,6 @@ namespace ColdOBot
                                 await e.Message.RespondAsync(((int)await new ScoreImageRequest("ColdVolcao", 848345, Mode.Osu).Perform()).ToString());
                                 break;
                         }
-                    }
-                    {
                         bool isLink = LinkDecoder.IsValidBeatmapForImage(split[0], out var type);
                         if (isLink)
                         {
