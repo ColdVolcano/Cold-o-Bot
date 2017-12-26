@@ -149,7 +149,7 @@ namespace ColdOBot
                     if (content.StartsWith("ping"))
                     {
                         DiscordMessage message = null;
-                        await Task.Run(async () => message = await e.Message.RespondAsync($"pong! `{e.Message.CreationTimestamp - DateTime.Now:ss\'s\'fff\'m\'}` -"));
+                        await Task.Run(async () => message = await e.Message.RespondAsync($"pong!"));
                         await message.ModifyAsync(
                             $"{message.Content} `{e.Message.CreationTimestamp - message.CreationTimestamp:ss\'s\'fff\'m\'}`");
                     }
